@@ -1,0 +1,42 @@
+[project]
+name = "summarizerai"
+version = "0.1.0"
+description = "Local-First AI Content Intelligence Platform for Multi-Modal Sources"
+readme = "README.md"
+authors = [
+    { name = "Dikshant Sharma", email = "dikshantsharma997@gmail.com" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "pydantic>=2.10.0",
+    "pydantic-settings>=2.6.0",
+    "sqlalchemy[asyncio]>=2.0.36",
+    "aiosqlite>=0.20.0",
+    "asyncpg>=0.30.0",
+    "pgvector>=0.3.6",
+    "pymupdf>=1.25.0",
+    "trafilatura>=1.12.0",
+    "beautifulsoup4>=4.12.0",
+    "google-genai>=2.0.0",
+    "httpx>=0.28.0",
+    "yt-dlp>=2024.12.0",
+    "numpy>=2.1.0",
+    "scikit-learn>=1.6.0",
+    "python-multipart>=0.0.20",
+    "python-dotenv>=1.0.1",
+]
+
+[tool.pyrefly]
+project-includes = [
+    "**/*.py*",
+    "**/*.ipynb",
+]
+
+[project.scripts]
+summarizerai = "summarizerai:main"
+
+[build-system]
+requires = ["uv_build>=0.12.2,<0.13.0"]
+build-backend = "uv_build"

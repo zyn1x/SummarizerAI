@@ -1,0 +1,53 @@
+services:
+  # PostgreSQL with pgvector extension
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: summarizerai-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: summarizerai
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Redis for task queues / Celery readiness
+  redis:
+    image: redis:7-alpine
+    container_name: summarizerai-redis
+    ports:
+      - "6379:6379"
+
+  # Backend FastAPI App
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: summarizerai-backend
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgrespassword@postgres:5432/summarizerai
+      LLM_PROVIDER: gemini
+      DEFAULT_LLM_PROVIDER: gemini
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: gemini-3.8-flash
+      GEMINI_EMBEDDING_MODEL: gemini-embedding-2
+      OLLAMA_BASE_URL: http://host.docker.internal:11434
+      OLLAMA_MODEL: llama3.2
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - ./data:/app/data
+
+volumes:
+  pgdata:
