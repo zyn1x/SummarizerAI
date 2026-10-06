@@ -1,17 +1,17 @@
 # SummarizerAI 🧠⚡
 > **Local-First AI Content Intelligence Platform for Multi-Modal Sources with Verifiable Citations and Grounded RAG.**
 
-Built with **React + Vite + Tailwind CSS** on the frontend and **Python + FastAPI + PostgreSQL (pgvector ready)** on the backend.
+Built with **React + Vite + Tailwind CSS** on the frontend and **Python + FastAPI + PostgreSQL (pgvector ready) / SQLite** on the backend.
 
 ---
 
 ## 🌟 Key Features
 
 1. **Universal Multi-Source Ingestion**:
-   - 📄 **PDF Documents**: PyMuPDF (`fitz`) with automatic page tracking and OCR fallback readiness.
-   - 📝 **TXT / Markdown**: Multi-encoding detection and heading-aware structure extraction.
-   - 🌐 **Websites & Articles**: Trafilatura clean content extraction with BeautifulSoup structural fallback and section preservation.
-   - 🎥 **YouTube Videos**: `yt-dlp` subtitle extraction with exact millisecond-accurate timestamps (`MM:SS`) mapped to video chunks.
+   - 📄 **PDF Documents**: PyMuPDF (`pymupdf` / `fitz`) with automatic page tracking and section header detection.
+   - 📝 **TXT / Markdown**: Multi-encoding detection and heading-aware structural extraction.
+   - 🌐 **Websites & Articles**: Trafilatura clean content extraction with BeautifulSoup fallback and section preservation.
+   - 🎥 **YouTube Videos**: `yt-dlp` subtitle extraction with exact second-accurate timestamps (`MM:SS` / `HH:MM:SS`) mapped to video chunks.
    - 🔬 **Research Papers**: ArXiv API metadata extraction, automated PDF retrieval, and scientific section parsing (Abstract, Methods, Results, Discussion).
 
 2. **Security & Data Protection**:
@@ -20,10 +20,10 @@ Built with **React + Vite + Tailwind CSS** on the frontend and **Python + FastAP
    - 🧹 **Automatic Cleanup**: Temporary files and scratch downloads are safely deleted after ingestion.
 
 3. **Provider-Agnostic LLM Architecture**:
-   - ⚡ **Google Gemini as Default Cloud Engine**: Powered by Google's official `google-genai` SDK with `gemini-3.8-flash` for high-speed generation and `gemini-embedding-2` for 3072-dimensional embeddings / RAG.
+   - ⚡ **Google Gemini as Default Cloud Engine**: Powered by Google's official `google-genai` SDK v2 with `gemini-3.8-flash` for high-speed generation and `gemini-embedding-2` for 3072-dimensional embeddings / RAG.
    - 🦙 **Ollama as Optional Local Runner**: Seamless local inference (`llama3.2`, `mistral`, `qwen2.5`, etc.) with zero mandatory requirement during standard development.
-   - 🛡️ **Offline Intelligent Fallback**: Built-in TF-IDF vector embeddings and extractive synthesis that ensures 100% functionality out-of-the-box even without an API key.
-   - ☁️ **Cloud LLM Readiness**: Modular architecture ready for Gemini, OpenAI (`gpt-4o-mini`), and local engines with **zero API keys exposed to the frontend**.
+   - 🛡️ **Offline Intelligent Fallback**: Built-in TF-IDF vector embeddings and extractive synthesis that ensures 100% functionality out-of-the-box even without an API key or under rate limits.
+   - ☁️ **Cloud LLM Readiness**: Modular architecture with **zero API keys exposed to the frontend**.
 
 4. **Hierarchical Document Analysis**:
    - Map-Reduce pipeline for long documents: batches chunks into section syntheses before generating cohesive executive or detailed deliverables.
@@ -53,11 +53,25 @@ Built with **React + Vite + Tailwind CSS** on the frontend and **Python + FastAP
 
 ---
 
+## 🛠️ Technology Stack
+
+| Layer | Technologies & Libraries |
+| :--- | :--- |
+| **Backend Framework** | **Python 3.11+**, **FastAPI**, **Uvicorn**, **Pydantic v2**, **pydantic-settings** |
+| **LLM & Embeddings** | **Google GenAI SDK (`google-genai` v2)**, **Gemini 3.8 Flash**, **Gemini Embedding 2**, **Ollama API Client** (Optional Local Provider) |
+| **Vector Search / RAG** | **NumPy**, **Scikit-learn** (Cosine similarity, Top-$k$ ranker), **PGVector** (PostgreSQL) |
+| **Document Ingestion** | **PyMuPDF (`fitz`)**, **Trafilatura**, **BeautifulSoup4**, **`yt-dlp`**, **ArXiv API Client**, **HTTPX** |
+| **Database & ORM** | **SQLAlchemy 2.0 (AsyncIO)**, **aiosqlite** (SQLite dev), **asyncpg** (PostgreSQL prod) |
+| **Frontend UI** | **React 19**, **TypeScript**, **Vite**, **Tailwind CSS**, **Lucide React**, **react-markdown**, **remark-gfm** |
+| **DevOps & Testing** | **Docker**, **Docker Compose**, **Pytest**, **pytest-asyncio** |
+
+---
+
 ## 🏛️ System Architecture
 
 ```
 SummarizerAI
-├── frontend/                   # React + Vite + Tailwind CSS UI
+├── frontend/                   # React 19 + TypeScript + Vite + Tailwind CSS UI
 │   ├── src/
 │   │   ├── components/         # Modular React components
 │   │   │   ├── Navbar.tsx
@@ -77,7 +91,7 @@ SummarizerAI
 │   ├── ingestion/              # PDF, TXT, Web, YouTube & ArXiv extractors
 │   ├── processing/             # Normalization & Canonical Document model
 │   ├── chunking/               # Structure-aware chunking preserving metadata
-│   ├── llm/                    # Provider abstraction (Ollama, Fallback, OpenAI)
+│   ├── llm/                    # Provider abstraction (Gemini, Ollama, Fallback)
 │   ├── actions/                # Summaries, Key Points, Actionable Insights, Citations
 │   ├── services/               # RAG vector retrieval & Document caching service
 │   ├── models/                 # SQLAlchemy async models
@@ -85,6 +99,8 @@ SummarizerAI
 │   ├── database/               # Async engine (PostgreSQL / SQLite)
 │   └── main.py                 # FastAPI application entrypoint
 ├── tests/                      # Automated unit and integration test suite
+├── requirements.txt            # Python production dependencies with pinned bounds
+├── pyproject.toml              # Build system configuration
 ├── docker-compose.yml          # Postgres + pgvector, Redis, and Backend
 ├── Dockerfile                  # Multi-stage production container build
 └── .env.example                # Documented configuration variables
@@ -95,23 +111,34 @@ SummarizerAI
 ## 🚀 Quick Start (Local Setup)
 
 ### 1. Prerequisites
-- Python >= 3.11 (Python 3.13 recommended)
-- Node.js >= 18 & npm
-- [Ollama](https://ollama.com/) (Optional, for local LLM inference)
+- **Python >= 3.11** (Python 3.12 or 3.13 recommended)
+- **Node.js >= 18** & npm
+- [Ollama](https://ollama.com/) *(Optional, only needed if you want local offline LLMs)*
 
 ### 2. Backend Setup
 ```bash
 # Clone the repository
+git clone https://github.com/zyn1x/SummarizerAI.git
 cd SummarizerAI
 
-# Install backend dependencies in virtual environment
-uv pip install -e .
+# Create and activate a Python virtual environment
+python -m venv .venv
+# On Windows:
+.venv\Scripts\activate
+# On Linux/macOS:
+source .venv/bin/activate
+
+# Install backend dependencies via requirements.txt
+pip install -r requirements.txt
+
+# Or if you use uv:
+uv pip install -r requirements.txt
 
 # Copy environment variables
 cp .env.example .env
 
-# Run database migrations / initialization & start API server
-.venv\Scripts\python.exe -m uvicorn summarizerai.main:app --host 127.0.0.1 --port 8000 --reload
+# Start the FastAPI backend server
+python -m uvicorn summarizerai.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 API Documentation will be live at: `http://127.0.0.1:8000/api/docs`
 
@@ -120,10 +147,10 @@ API Documentation will be live at: `http://127.0.0.1:8000/api/docs`
 # In a new terminal window:
 cd frontend
 
-# Install dependencies (already installed)
+# Install dependencies
 npm install
 
-# Start Vite dev server with API proxy
+# Start Vite dev server
 npm run dev
 ```
 Open `http://localhost:5173` in your browser.
@@ -135,7 +162,7 @@ Open `http://localhost:5173` in your browser.
 SummarizerAI defaults to **Google Gemini** for instant, high-performance cloud inference with zero local GPU hardware requirements.
 
 ### 1. Google Gemini Setup (Default & Recommended)
-1. Generate an API key at [Google AI Studio](https://aistudio.google.com/app/apikey).
+1. Generate a free API key at [Google AI Studio](https://aistudio.google.com/app/apikey).
 2. Configure your `.env` file:
    ```bash
    LLM_PROVIDER=gemini
@@ -145,7 +172,7 @@ SummarizerAI defaults to **Google Gemini** for instant, high-performance cloud i
    ```
 
 ### 2. Ollama Local LLM Setup (Optional)
-To run completely offline with local models:
+To run completely offline with local open-weights models:
 ```bash
 # 1. Set LLM_PROVIDER=ollama in your .env
 # 2. Start Ollama and pull your models
@@ -153,7 +180,8 @@ ollama serve
 ollama pull llama3.2
 ollama pull nomic-embed-text
 ```
-*Note: If neither Gemini nor Ollama is configured or reachable, SummarizerAI automatically and gracefully activates its built-in local offline engine so you can use the application immediately without interruption.*
+
+*Note: If neither Gemini nor Ollama is configured or reachable, SummarizerAI automatically and gracefully activates its built-in local offline engine so you can explore and use the application immediately.*
 
 ---
 
@@ -174,7 +202,7 @@ Services exposed:
 
 The test suite validates chunking, metadata preservation, SSRF protection, sanitization, and the end-to-end API pipeline:
 ```bash
-.venv\Scripts\pytest.exe -v tests/
+pytest -v tests/
 ```
 
 ---
